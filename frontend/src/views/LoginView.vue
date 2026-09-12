@@ -7,13 +7,13 @@
         <aside class="col-lg-5 login-aside d-none d-lg-flex" aria-label="Tentang aplikasi">
           <div class="login-aside__content">
             <!-- <p class="login-aside__brand">Task Management</p> -->
-            <h1>Task Management System</h1>
+            <h1>Taskboard</h1>
           </div>
         </aside>
 
         <section class="col-lg-7 d-flex align-items-center justify-content-center login-content">
           <div class="login-form-wrap w-100">
-            <p class="login-mobile-brand d-lg-none">Task Management</p>
+            <p class="login-mobile-brand d-lg-none">Taskboard</p>
             <p class="login-kicker">Welcome</p>
             <h2>Masuk ke akun Anda</h2>
             <p class="login-description">Gunakan email dan kata sandi yang sudah terdaftar</p>
