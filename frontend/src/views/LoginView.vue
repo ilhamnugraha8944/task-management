@@ -1,25 +1,4 @@
-<script setup>
-import { reactive, ref } from 'vue'
 
-const form = reactive({
-  email: '',
-  password: '',
-  remember: false,
-})
-
-const passwordVisible = ref(false)
-const wasSubmitted = ref(false)
-const isReady = ref(false)
-
-function submitLogin(event) {
-  wasSubmitted.value = true
-  isReady.value = false
-
-  if (!event.currentTarget.checkValidity()) return
-
-  isReady.value = true
-}
-</script>
 
 <template>
   <main class="login-page">
@@ -86,17 +65,9 @@ function submitLogin(event) {
                 </div>
               </div>
 
-              <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-                <div class="form-check">
-                  <input id="remember" v-model="form.remember" class="form-check-input" type="checkbox" />
-                </div>
-              </div>
 
               <button class="btn btn-primary btn-lg w-100 login-submit" type="submit">Masuk</button>
 
-              <div v-if="isReady" class="alert alert-success mt-3 mb-0" role="status">
-                login
-              </div>
             </form>
 
             <p class="login-register mb-0 mt-4">
@@ -108,3 +79,59 @@ function submitLogin(event) {
     </div>
   </main>
 </template>
+
+
+<script setup>
+  import Swal from 'sweetalert2'
+  import { reactive, ref } from 'vue'
+  import { useRouter } from 'vue-router'
+
+  const router = useRouter()
+
+  const form = reactive({
+    email: '',
+    password: '',
+    remember: false,
+  })
+
+  const passwordVisible = ref(false)
+  const wasSubmitted = ref(false)
+  async function submitLogin(event) {
+    wasSubmitted.value = true
+
+    if (!event.currentTarget.checkValidity()) return
+
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Login gagal',
+          text: data.message || 'Email atau kata sandi salah.',
+        })
+        return
+      }
+
+      localStorage.setItem('token', data.token)
+      router.push('/task')
+    } catch {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Tidak dapat login',
+        text: 'Tidak dapat terhubung ke server. Coba lagi nanti.',
+      })
+    }
+  }
+</script>
