@@ -203,6 +203,7 @@
 import Swal from 'sweetalert2'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { API_URL } from '../config/api'
 
 const router = useRouter()
 const tasks = ref([])
@@ -297,7 +298,7 @@ async function getTasks() {
     const token = localStorage.getItem('token')
     const query = params.toString()
     console.log(query);
-    const url = `http://localhost:3000/api/tasks${query ? `?${query}` : ''}`
+    const url = `${API_URL}/tasks${query ? `?${query}` : ''}`
 
     const response = await fetch(url, {
       headers: {
@@ -355,7 +356,7 @@ async function saveTask(event) {
 
   if (editingId.value) {
     try {
-      const response = await fetch(`http://localhost:3000/api/tasks/${editingId.value}`, {
+      const response = await fetch(`${API_URL}/tasks/${editingId.value}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -388,7 +389,7 @@ async function saveTask(event) {
   }
 
   try {
-    const response = await fetch('http://localhost:3000/api/tasks', {
+      const response = await fetch(`${API_URL}/tasks`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -432,7 +433,7 @@ async function deleteTask(task) {
 
   if (result.isConfirmed) {
     try {
-      const response = await fetch(`http://localhost:3000/api/tasks/${task.id}`, {
+      const response = await fetch(`${API_URL}/tasks/${task.id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,

@@ -85,6 +85,7 @@
   import Swal from 'sweetalert2'
   import { reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import { API_URL } from '../config/api'
 
   const router = useRouter()
 
@@ -102,7 +103,7 @@
     if (!event.currentTarget.checkValidity()) return
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
