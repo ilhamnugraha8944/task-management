@@ -116,6 +116,8 @@ Gunakan `backend/.env.example` sebagai template. Salin menjadi `backend/.env`, l
 | `JWT_SECRET` | Secret untuk menandatangani JWT; gunakan nilai acak yang panjang. |
 | `JWT_EXPIRES_IN` | Masa berlaku JWT, misalnya `1h`. |
 
+Frontend menggunakan `frontend/.env.example` sebagai template. Atur `VITE_API_URL` ke `http://localhost:3000/api` saat development atau ke URL backend production saat deploy.
+
 ## API utama
 
 Register dan login tidak membutuhkan token:
@@ -175,4 +177,3 @@ Nilai `status` yang tersedia: `pending`, `in-progress`, dan `done`. Field `title
 Postman collection tersedia di [docs/postman/Taskboard.postman_collection.json](docs/postman/Taskboard.postman_collection.json).
 
 Import file tersebut ke Postman, jalankan `Auth > Register` (jika user belum ada), lalu `Auth > Login`. Script pada request login akan menyimpan JWT ke collection variable `token`, sehingga request pada folder `Tasks` dapat langsung digunakan. Isi variable `taskId` dengan ID task dari response `List Tasks` sebelum menjalankan request edit atau delete.
-
