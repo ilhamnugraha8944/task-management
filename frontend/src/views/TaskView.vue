@@ -114,7 +114,7 @@
             </table>
           </div>
 
-          <nav v-if="totalPages > 1" class="task-pagination" aria-label="Pagination tugas">
+          <nav class="task-pagination" aria-label="Pagination tugas">
             <button
               class="btn task-pagination__button"
               type="button"
@@ -130,6 +130,7 @@
                 class="btn task-pagination__page"
                 :class="{ 'task-pagination__page--active': currentPage === page }"
                 type="button"
+                :disabled="!filteredTasks.length"
                 @click="currentPage = page"
               >
                 {{ page }}
@@ -851,6 +852,12 @@ function logout() {
   border-color: var(--tm-green);
   color: #ffffff;
   background: var(--tm-green);
+}
+
+.task-pagination__page:disabled {
+  border-color: var(--tm-border);
+  color: #a7b7ae;
+  background: #f5f8f6;
 }
 
 .task-backdrop {
