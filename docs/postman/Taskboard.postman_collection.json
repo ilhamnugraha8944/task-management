@@ -1,0 +1,204 @@
+{
+  "info": {
+    "name": "Taskboard API",
+    "description": "Collection untuk mencoba API autentikasi dan task Taskboard. Jalankan Login terlebih dahulu agar token JWT tersimpan otomatis.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "email",
+      "value": "tester@example.com"
+    },
+    {
+      "key": "password",
+      "value": "password123"
+    },
+    {
+      "key": "fullname",
+      "value": "Tester Taskboard"
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "taskId",
+      "value": "1"
+    },
+    {
+      "key": "statusFilter",
+      "value": "done"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health",
+        "description": "Memastikan backend dapat diakses."
+      }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"fullname\": \"{{fullname}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Mendaftarkan user baru. Jika email sudah ada, gunakan user tersebut untuk Login."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) pm.collectionVariables.set('token', json.token);",
+                  "if (json.user && json.user.id) pm.collectionVariables.set('userId', String(json.user.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Login dan menyimpan token JWT dari response ke collection variable token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "List Tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/tasks",
+            "description": "Mengambil semua task milik user yang sedang login."
+          }
+        },
+        {
+          "name": "List Tasks - Filter Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/tasks?status={{statusFilter}}",
+            "description": "Mengambil task berdasarkan status pending, in-progress, atau done. Ubah nilai statusFilter bila diperlukan."
+          }
+        },
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Selesaikan laporan\",\n  \"description\": \"Deskripsi opsional\",\n  \"status\": \"pending\",\n  \"deadline\": \"2026-09-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/tasks",
+            "description": "Membuat task baru. Deadline boleh dikosongkan atau memakai format YYYY-MM-DD."
+          }
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Laporan selesai direvisi\",\n  \"description\": \"Deskripsi diperbarui\",\n  \"status\": \"in-progress\",\n  \"deadline\": \"2026-09-25\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/tasks/{{taskId}}",
+            "description": "Mengubah task berdasarkan taskId. Isi taskId dengan ID dari response List Tasks."
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/tasks/{{taskId}}",
+            "description": "Menghapus task berdasarkan taskId."
+          }
+        }
+      ]
+    }
+  ]
+}
