@@ -79,6 +79,15 @@ Endpoint pengecekan:
 GET /api/health
 ```
 
+## Menjalankan test backend
+
+Test endpoint berjalan tanpa koneksi ke MySQL karena repository di-mock:
+
+```bash
+cd backend
+npm test
+```
+
 ## Menjalankan frontend
 
 Buka terminal baru:
@@ -166,5 +175,4 @@ Nilai `status` yang tersedia: `pending`, `in-progress`, dan `done`. Field `title
 Postman collection tersedia di [docs/postman/Taskboard.postman_collection.json](docs/postman/Taskboard.postman_collection.json).
 
 Import file tersebut ke Postman, jalankan `Auth > Register` (jika user belum ada), lalu `Auth > Login`. Script pada request login akan menyimpan JWT ke collection variable `token`, sehingga request pada folder `Tasks` dapat langsung digunakan. Isi variable `taskId` dengan ID task dari response `List Tasks` sebelum menjalankan request edit atau delete.
-
 
