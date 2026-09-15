@@ -126,7 +126,7 @@
       }
 
       localStorage.setItem('token', data.token)
-      router.push('/task')
+      router.push('/material')
     } catch {
       await Swal.fire({
         icon: 'error',
