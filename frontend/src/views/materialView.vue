@@ -41,8 +41,13 @@
             <p class="material-eyebrow">Referensi harga</p>
             <h2 id="material-title">List Material</h2>
           </div>
-          <button class="btn material-primary" type="button" @click="openCreatePanel">
-            Tambah cat
+        </div>
+
+        <p v-if="loading" role="status">Memuat data cat...</p>
+        <div v-if="loadError" class="alert alert-danger" role="alert">
+          {{ loadError }}
+          <button class="btn btn-sm material-secondary" type="button" @click="loadMaterials">
+            Coba lagi
           </button>
         </div>
 
@@ -69,6 +74,16 @@
         </div>
 
         <section class="material-card" aria-label="Daftar dan filter harga cat">
+          <div class="m-3 text-end">
+            <button
+            class="btn material-primary"
+            type="button"
+            :disabled="loading"
+            @click="openCreatePanel"
+          >
+            Tambah
+          </button>
+          </div>
           <div class="material-filters">
             <label class="material-search">
               <span>Cari</span>
@@ -430,7 +445,13 @@
             <img v-if="form.foto" :src="form.foto" alt="Foto material cat" />
           </div>
           <div class="sheet-photo-actions">
-            <input ref="photoInput" type="file" accept="image/*" hidden @change="selectPhoto" />
+            <input
+              ref="photoInput"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              hidden
+              @change="selectPhoto"
+            />
             <button type="button" @click="photoInput.click()">
               <span aria-hidden="true">^</span> Upload
             </button>
@@ -442,8 +463,8 @@
             <button type="button" @click="closePanel">
               <span aria-hidden="true">X</span> Batalkan
             </button>
-            <button class="sheet-save" type="submit" :disabled="photoLoading">
-              <span aria-hidden="true">V</span> Simpan
+            <button class="sheet-save" type="submit" :disabled="photoLoading || saving">
+              <span aria-hidden="true">V</span> {{ saving ? 'Menyimpan...' : 'Simpan' }}
             </button>
           </div>
         </div>
@@ -454,86 +475,19 @@
 
 <script setup>
 import Swal from 'sweetalert2'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { API_URL } from '../config/api'
 import { useRouter } from 'vue-router'
 import { comparisonPricePerKg, comparisonWeightKg } from '../utils/materialPricing'
 import { formatMaterialColor, parseMaterialColor } from '../utils/materialColor'
 
-const STORAGE_KEY = 'kanggo-paint-materials'
 const ITEMS_PER_PAGE = 8
-const seedMaterials = [
-  {
-    id: 1,
-    jenis: 'Interior',
-    merek: 'Jotun',
-    subMerek: 'Jotaplast',
-    kodeWarna: '7236',
-    warna: 'Chi',
-    kemasan: 'Galon',
-    isiNilai: 3.5,
-    isiSatuan: 'L',
-    beratTotalKg: 4.4,
-    beratKemasanKg: 0.2,
-    hargaKemasan: 147000,
-    toko: 'TC. Sinar Jaya 2',
-    alamat: 'Gading Serpong, Medang, Pagedangan, Kabupaten Tangerang, Banten',
-    foto: '',
-  },
-  {
-    id: 2,
-    jenis: 'Interior',
-    merek: 'Jotun',
-    subMerek: 'Jotaplast',
-    kodeWarna: '7236',
-    warna: 'Chi',
-    kemasan: 'Pail',
-    isiNilai: 18,
-    isiSatuan: 'L',
-    beratTotalKg: 26,
-    beratKemasanKg: 1,
-    hargaKemasan: 692000,
-    toko: 'TC. Sinar Jaya',
-    alamat: 'BSD',
-    foto: '',
-  },
-  {
-    id: 3,
-    jenis: 'Interior',
-    merek: 'Dulux',
-    subMerek: 'Catylac',
-    kodeWarna: '1501',
-    warna: 'White',
-    kemasan: 'Galon',
-    isiNilai: 5,
-    isiSatuan: 'kg',
-    beratTotalKg: 5.4,
-    beratKemasanKg: 0.2,
-    hargaKemasan: 153000,
-    toko: 'TC. Sinar Jaya',
-    alamat: 'BSD',
-    foto: '',
-  },
-  {
-    id: 4,
-    jenis: 'Interior',
-    merek: 'Dulux',
-    subMerek: 'Catylac',
-    kodeWarna: '1501',
-    warna: 'White',
-    kemasan: 'Pail',
-    isiNilai: 21,
-    isiSatuan: 'kg',
-    beratTotalKg: 22,
-    beratKemasanKg: 1,
-    hargaKemasan: 740000,
-    toko: 'TC. Sinar Jaya',
-    alamat: 'BSD',
-    foto: '',
-  },
-]
-
 const router = useRouter()
-const materials = ref(loadMaterials())
+const materials = ref([])
+const loading = ref(true)
+const saving = ref(false)
+const deletingId = ref(null)
+const loadError = ref('')
 const materialDialog = ref(null)
 const photoInput = ref(null)
 const photoLoading = ref(false)
@@ -549,6 +503,9 @@ const emptyForm = () => ({
   subMerek: '',
   kodeWarna: '',
   warna: '',
+  bentuk: '',
+  luas: null,
+  satuanLuas: '',
   kemasan: 'Galon',
   isiNilai: '',
   isiSatuan: 'L',
@@ -637,9 +594,11 @@ const paginatedMaterials = computed(() =>
   ),
 )
 const formWeightKg = computed(() =>
-  form.isiSatuan === 'L' && form.beratKemasanKg === '' ? 0 : weightKg(form),
+  form.isiSatuan === 'L' && form.beratKemasanKg === '' ? 0 : comparisonWeightKg(form),
 )
-const formComparisonPrice = computed(() => (formWeightKg.value > 0 ? pricePerKg(form) : 0))
+const formComparisonPrice = computed(() =>
+  formWeightKg.value > 0 ? comparisonPricePerKg(form) : 0,
+)
 
 watch(
   () => [filters.search, filters.jenis, filters.merek, filters.sort],
@@ -656,26 +615,50 @@ function updateStoreAddress() {
   form.alamat = addressSuggestions.value.length === 1 ? addressSuggestions.value[0] : ''
 }
 
-function loadMaterials() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY))
-    return Array.isArray(saved) ? saved : seedMaterials
-  } catch {
-    return seedMaterials
+async function materialRequest(path = '', options = {}) {
+  const response = await fetch(`${API_URL}/materials${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+  })
+  const result = await response.json()
+  if (response.status === 401) {
+    localStorage.removeItem('token')
+    router.replace('/login')
+    throw new Error('Sesi berakhir. Silakan login kembali.')
   }
+  if (!response.ok) throw new Error(result.message || 'Permintaan gagal. Coba lagi.')
+  return result
 }
 
-function persistMaterials(rows = materials.value) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rows))
+async function loadMaterials() {
+  loading.value = true
+  loadError.value = ''
+  try {
+    const result = await materialRequest()
+    materials.value = result.data
+  } catch (error) {
+    loadError.value =
+      error.message === 'Failed to fetch'
+        ? 'Tidak dapat menghubungi server. Pastikan backend berjalan.'
+        : error.message
+  } finally {
+    loading.value = false
+  }
 }
+onMounted(loadMaterials)
+
 function weightKg(material) {
-  return comparisonWeightKg(material)
+  return material.beratIsiKg ?? comparisonWeightKg(material)
 }
 function pricePerKg(material) {
-  return comparisonPricePerKg(material)
+  return material.hargaKomparasi ?? comparisonPricePerKg(material)
 }
 function resetForm() {
   removePhoto()
+  for (const key of Object.keys(form)) delete form[key]
   Object.assign(form, emptyForm())
   colorInput.value = ''
   formError.value = ''
@@ -694,6 +677,7 @@ function openEditPanel(material) {
   materialDialog.value.showModal()
 }
 function closePanel() {
+  if (saving.value) return
   materialDialog.value.close()
   editingId.value = null
   resetForm()
@@ -713,7 +697,7 @@ function closeOnBackdrop(event) {
 
 async function saveMaterial() {
   formError.value = ''
-  if (photoLoading.value) return
+  if (photoLoading.value || saving.value) return
   if (form.isiSatuan === 'L' && formWeightKg.value <= 0) {
     formError.value = 'Berat total harus lebih besar daripada berat kemasan kosong.'
     return
@@ -723,23 +707,29 @@ async function saveMaterial() {
   const material = {
     ...form,
     ...parseMaterialColor(colorInput.value, sameBrandMaterials.value),
-    id: editingId.value || Date.now(),
     isiNilai: Number(form.isiNilai),
     beratTotalKg: Number(form.beratTotalKg) || 0,
     beratKemasanKg: Number(form.beratKemasanKg) || 0,
     hargaKemasan: Number(form.hargaKemasan),
   }
-  const nextMaterials = wasEditing
-    ? materials.value.map((item) => (item.id === material.id ? material : item))
-    : [material, ...materials.value]
+  saving.value = true
   try {
-    persistMaterials(nextMaterials)
-  } catch {
+    const result = await materialRequest(wasEditing ? `/${editingId.value}` : '', {
+      method: wasEditing ? 'PUT' : 'POST',
+      body: JSON.stringify(material),
+    })
+    materials.value = wasEditing
+      ? materials.value.map((item) => (item.id === result.data.id ? result.data : item))
+      : [...materials.value, result.data]
+  } catch (error) {
     formError.value =
-      'Data belum tersimpan. Penyimpanan browser penuh atau tidak tersedia. Coba perkecil foto.'
+      error.message === 'Failed to fetch'
+        ? 'Data belum tersimpan. Tidak dapat menghubungi server.'
+        : error.message
     return
+  } finally {
+    saving.value = false
   }
-  materials.value = nextMaterials
   closePanel()
   await Swal.fire({
     icon: 'success',
@@ -750,6 +740,7 @@ async function saveMaterial() {
 }
 
 async function deleteMaterial(material) {
+  if (deletingId.value) return
   const result = await Swal.fire({
     icon: 'warning',
     title: 'Hapus data cat?',
@@ -760,15 +751,22 @@ async function deleteMaterial(material) {
     confirmButtonColor: '#b04b3f',
   })
   if (!result.isConfirmed) return
-  materials.value = materials.value.filter((item) => item.id !== material.id)
-  persistMaterials()
+  deletingId.value = material.id
+  try {
+    await materialRequest(`/${material.id}`, { method: 'DELETE' })
+    materials.value = materials.value.filter((item) => item.id !== material.id)
+  } catch (error) {
+    await Swal.fire({ icon: 'error', title: 'Data belum dihapus', text: error.message })
+  } finally {
+    deletingId.value = null
+  }
 }
 
 function selectPhoto(event) {
   const file = event.target.files[0]
   if (!file) return
-  if (!file.type.startsWith('image/')) {
-    formError.value = 'Pilih file gambar untuk foto material.'
+  if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
+    formError.value = 'Pilih foto PNG, JPEG, WebP, atau GIF.'
     event.target.value = ''
     return
   }
