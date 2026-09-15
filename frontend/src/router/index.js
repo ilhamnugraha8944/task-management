@@ -1,6 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
-import RegisterView from '../views/RegisterView.vue'
 import TaskView from '../views/TaskView.vue'
 import MaterialView from '../views/materialView.vue'
 
@@ -9,17 +7,17 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login',
+      redirect: '/material',
     },
     {
       path: '/login',
       name: 'login',
-      component: LoginView,
+      redirect: '/material',
     },
     {
       path: '/register',
       name: 'register',
-      component: RegisterView,
+      redirect: '/material',
     },
     {
       path: '/task',

@@ -14,10 +14,10 @@ router.post("/tasks", authenticateToken, taskController.add);
 router.put("/tasks/:id", authenticateToken, taskController.edit);
 router.delete("/tasks/:id", authenticateToken, taskController.remove);
 
-router.get("/materials", authenticateToken, materialController.list);
-router.get("/materials/:id", authenticateToken, materialController.get);
-router.post("/materials", authenticateToken, materialController.save);
-router.put("/materials/:id", authenticateToken, materialController.save);
-router.delete("/materials/:id", authenticateToken, materialController.remove);
+router.get("/materials", materialController.list);
+router.get("/materials/:id", materialController.get);
+router.post("/materials", materialController.save);
+router.put("/materials/:id", materialController.save);
+router.delete("/materials/:id", materialController.remove);
 
 module.exports = router;

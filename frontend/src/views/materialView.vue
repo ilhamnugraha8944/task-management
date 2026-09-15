@@ -253,7 +253,7 @@
       ref="materialDialog"
       class="sheet-dialog"
       aria-labelledby="material-form-title"
-      @cancel.prevent="closePanel"
+      @cancel.self.prevent="closePanel"
       @click="closeOnBackdrop"
     >
       <h2 id="material-form-title" class="sheet-title">
@@ -261,8 +261,6 @@
       </h2>
 
       <form class="sheet-form" @submit.prevent="saveMaterial">
-        <p v-if="formError" class="sheet-error" role="alert">{{ formError }}</p>
-
         <div class="sheet-fields">
           <div class="sheet-row">
             <label for="paint-type">Jenis</label>
@@ -376,11 +374,11 @@
                 <span>Rp</span>
                 <input
                   id="paint-price"
-                  v-model.number="form.hargaKemasan"
+                  :value="form.hargaKemasan ? formatNumber(form.hargaKemasan) : ''"
+                  @input="formatHarga"
                   class="sheet-number"
-                  type="number"
-                  min="1"
-                  step="1"
+                  type="text"
+                  inputmode="numeric"
                   required
                 />
                 <span class="sheet-slash">/</span>
@@ -432,6 +430,7 @@
             <label for="paint-address">Alamat Singkat</label>
             <MaterialSuggestion
               id="paint-address"
+              class="sheet-address"
               v-model="form.alamat"
               label="Alamat Singkat"
               :options="addressSuggestions"
@@ -477,13 +476,11 @@
 import Swal from 'sweetalert2'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { API_URL } from '../config/api'
-import { useRouter } from 'vue-router'
 import { comparisonPricePerKg, comparisonWeightKg } from '../utils/materialPricing'
 import { formatMaterialColor, parseMaterialColor } from '../utils/materialColor'
 import MaterialSuggestion from '../components/MaterialSuggestion.vue'
 
 const ITEMS_PER_PAGE = 8
-const router = useRouter()
 const materials = ref([])
 const loading = ref(true)
 const saving = ref(false)
@@ -495,7 +492,6 @@ const photoLoading = ref(false)
 const colorInput = ref('')
 let photoReader = null
 const editingId = ref(null)
-const formError = ref('')
 const currentPage = ref(1)
 const filters = reactive({ search: '', jenis: '', merek: '', sort: 'source' })
 const emptyForm = () => ({
@@ -625,15 +621,9 @@ async function materialRequest(path = '', options = {}) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
     },
   })
   const result = await response.json()
-  if (response.status === 401) {
-    localStorage.removeItem('token')
-    router.replace('/login')
-    throw new Error('Sesi berakhir. Silakan login kembali.')
-  }
   if (!response.ok) throw new Error(result.message || 'Permintaan gagal. Coba lagi.')
   return result
 }
@@ -666,7 +656,6 @@ function resetForm() {
   for (const key of Object.keys(form)) delete form[key]
   Object.assign(form, emptyForm())
   colorInput.value = ''
-  formError.value = ''
 }
 function openCreatePanel() {
   editingId.value = null
@@ -679,7 +668,6 @@ function openEditPanel(material) {
   Object.assign(form, emptyForm(), material)
   form.satuanHarga = material.satuanHarga || material.kemasan
   colorInput.value = formatMaterialColor(material)
-  formError.value = ''
   materialDialog.value.showModal()
 }
 function closePanel() {
@@ -701,23 +689,34 @@ function closeOnBackdrop(event) {
     closePanel()
 }
 
+function showFormError(message) {
+  return Swal.fire({
+    target: materialDialog.value?.open ? materialDialog.value : 'body',
+    icon: 'error',
+    title: 'Periksa data cat',
+    text: message,
+    confirmButtonText: 'Mengerti',
+    confirmButtonColor: '#d00000',
+    keydownListenerCapture: true,
+  })
+}
+
 async function saveMaterial() {
-  formError.value = ''
   if (photoLoading.value || saving.value) return
+  if (!(Number(form.hargaKemasan) > 0)) {
+    return showFormError('Harga wajib diisi dan lebih dari 0.')
+  }
   if (form.satuanHarga === 'L' && form.isiSatuan !== 'L') {
-    formError.value = 'Harga per L memerlukan Volume Isi dalam L agar dapat dihitung ke kg.'
-    return
+    return showFormError('Harga per L memerlukan Volume Isi dalam L agar dapat dihitung ke kg.')
   }
   if (
     ['Galon', 'Pail'].includes(form.satuanHarga) &&
     form.satuanHarga.toLowerCase() !== form.kemasan.toLowerCase()
   ) {
-    formError.value = 'Untuk harga per Galon atau Pail, pilih satuan yang sesuai kemasan.'
-    return
+    return showFormError('Untuk harga per Galon atau Pail, pilih satuan yang sesuai kemasan.')
   }
   if (form.isiSatuan === 'L' && formWeightKg.value <= 0) {
-    formError.value = 'Berat total harus lebih besar daripada berat kemasan kosong.'
-    return
+    return showFormError('Berat total harus lebih besar daripada berat kemasan kosong.')
   }
 
   const wasEditing = Boolean(editingId.value)
@@ -739,11 +738,11 @@ async function saveMaterial() {
       ? materials.value.map((item) => (item.id === result.data.id ? result.data : item))
       : [...materials.value, result.data]
   } catch (error) {
-    formError.value =
+    return showFormError(
       error.message === 'Failed to fetch'
         ? 'Data belum tersimpan. Tidak dapat menghubungi server.'
-        : error.message
-    return
+        : error.message,
+    )
   } finally {
     saving.value = false
   }
@@ -783,12 +782,12 @@ function selectPhoto(event) {
   const file = event.target.files[0]
   if (!file) return
   if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
-    formError.value = 'Pilih foto PNG, JPEG, WebP, atau GIF.'
+    showFormError('Pilih foto PNG, JPEG, WebP, atau GIF.')
     event.target.value = ''
     return
   }
   if (file.size > 1024 * 1024) {
-    formError.value = 'Ukuran foto maksimal 1 MB.'
+    showFormError('Ukuran foto maksimal 1 MB.')
     event.target.value = ''
     return
   }
@@ -797,11 +796,10 @@ function selectPhoto(event) {
   photoLoading.value = true
   photoReader.onload = () => {
     form.foto = photoReader.result
-    formError.value = ''
     photoLoading.value = false
   }
   photoReader.onerror = () => {
-    formError.value = 'Foto gagal dibaca. Coba pilih ulang.'
+    showFormError('Foto gagal dibaca. Coba pilih ulang.')
     photoLoading.value = false
   }
   photoReader.readAsDataURL(file)
@@ -827,9 +825,10 @@ function formatCurrency(value) {
 function formatNumber(value) {
   return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(value || 0)
 }
-function logout() {
-  localStorage.removeItem('token')
-  router.replace('/login')
+function formatHarga(event) {
+  const angka = event.target.value.replace(/\D/g, '')
+  form.hargaKemasan = angka ? Number(angka) : ''
+  event.target.value = angka ? formatNumber(form.hargaKemasan) : ''
 }
 </script>
 
@@ -1187,6 +1186,27 @@ function logout() {
   line-height: 16px;
 }
 
+.sheet-address {
+  height: auto;
+}
+
+.sheet-address :deep(.select2-selection--single) {
+  height: auto;
+  min-height: 62px;
+}
+
+.sheet-address :deep(.select2-selection__rendered) {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  line-height: 20px !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.sheet-address :deep(.select2-selection__arrow) {
+  height: 100% !important;
+}
+
 .sheet-row input,
 .sheet-row select,
 .sheet-row output {
@@ -1332,12 +1352,6 @@ function logout() {
 
 .sheet-form .sheet-save:disabled {
   opacity: 0.6;
-}
-
-.sheet-error {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: var(--tm-primary-dark);
 }
 
 :global(body:has(.sheet-dialog[open])) {

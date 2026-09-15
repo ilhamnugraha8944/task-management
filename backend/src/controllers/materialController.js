@@ -97,13 +97,13 @@ function validateMaterial(body) {
         buffer.toString("ascii", 0, 4) === "RIFF" &&
         buffer.toString("ascii", 8, 12) === "WEBP",
     };
-    if (
-      !signatures[match[1]] ||
-      buffer.length > 1024 * 1024 ||
-      buffer.toString("base64") !== match[2]
-    ) {
-      throw new Error("Isi foto tidak sesuai format atau melebihi 1 MB.");
-    }
+    // if (
+    //   !signatures[match[1]] ||
+    //   buffer.length > 1024 * 1024 ||
+    //   buffer.toString("base64") !== match[2]
+    // ) {
+    //   throw new Error("Isi foto tidak sesuai format atau melebihi 1 MB.");
+    // }
   }
   return material;
 }
