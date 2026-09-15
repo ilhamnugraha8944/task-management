@@ -76,13 +76,13 @@
         <section class="material-card" aria-label="Daftar dan filter harga cat">
           <div class="m-3 text-end">
             <button
-            class="btn material-primary"
-            type="button"
-            :disabled="loading"
-            @click="openCreatePanel"
-          >
-            Tambah
-          </button>
+              class="btn material-primary"
+              type="button"
+              :disabled="loading"
+              @click="openCreatePanel"
+            >
+              Tambah
+            </button>
           </div>
           <div class="material-filters">
             <label class="material-search">
@@ -267,45 +267,45 @@
         <div class="sheet-fields">
           <div class="sheet-row">
             <label for="paint-type">Jenis</label>
-            <input
+            <MaterialSuggestion
               id="paint-type"
-              v-model.trim="form.jenis"
-              list="type-suggestions"
+              v-model="form.jenis"
+              label="Jenis"
+              :options="typeOptions"
               required
-              autofocus
             />
-            <datalist id="type-suggestions">
-              <option v-for="item in typeOptions" :key="item" :value="item"></option>
-            </datalist>
           </div>
 
           <div class="sheet-row">
             <label for="paint-brand">Merek</label>
-            <input id="paint-brand" v-model.trim="form.merek" list="brand-suggestions" required />
-            <datalist id="brand-suggestions">
-              <option v-for="item in brandOptions" :key="item" :value="item"></option>
-            </datalist>
+            <MaterialSuggestion
+              id="paint-brand"
+              v-model="form.merek"
+              label="Merek"
+              :options="brandOptions"
+              required
+            />
           </div>
 
           <div class="sheet-row">
             <label for="paint-subbrand">Sub Merek</label>
-            <input id="paint-subbrand" v-model.trim="form.subMerek" list="subbrand-suggestions" />
-            <datalist id="subbrand-suggestions">
-              <option v-for="item in subBrandSuggestions" :key="item" :value="item"></option>
-            </datalist>
+            <MaterialSuggestion
+              id="paint-subbrand"
+              v-model="form.subMerek"
+              label="Sub Merek"
+              :options="subBrandSuggestions"
+            />
           </div>
 
           <div class="sheet-row">
             <label for="paint-color">Warna</label>
-            <input
+            <MaterialSuggestion
               id="paint-color"
               v-model="colorInput"
-              list="color-suggestions"
+              label="Warna"
+              :options="colorSuggestions"
               title="Pilih warna dari merek, atau ketik kode - nama warna"
             />
-            <datalist id="color-suggestions">
-              <option v-for="item in colorSuggestions" :key="item" :value="item"></option>
-            </datalist>
           </div>
 
           <div class="sheet-row">
@@ -330,12 +330,13 @@
           <div class="sheet-row">
             <label for="paint-package">Kemasan</label>
             <div class="sheet-pair">
-              <input
+              <MaterialSuggestion
                 id="paint-package"
-                v-model.trim="form.kemasan"
-                list="package-suggestions"
+                v-model="form.kemasan"
+                label="Kemasan"
+                :options="packageOptions"
                 required
-                @input="updatePackagingWeight"
+                @change="updatePackagingWeight"
               />
               <div class="sheet-weight">
                 <input
@@ -351,9 +352,6 @@
                 <span>Kg</span>
               </div>
             </div>
-            <datalist id="package-suggestions">
-              <option v-for="item in packageOptions" :key="item" :value="item"></option>
-            </datalist>
           </div>
 
           <div v-if="form.isiSatuan === 'L' && knownPackaging === null" class="sheet-row">
@@ -414,29 +412,25 @@
 
           <div class="sheet-row">
             <label for="paint-store">Toko</label>
-            <input
+            <MaterialSuggestion
               id="paint-store"
-              v-model.trim="form.toko"
-              list="store-suggestions"
+              v-model="form.toko"
+              label="Toko"
+              :options="storeOptions"
               required
-              @input="updateStoreAddress"
+              @change="updateStoreAddress"
             />
-            <datalist id="store-suggestions">
-              <option v-for="item in storeOptions" :key="item" :value="item"></option>
-            </datalist>
           </div>
 
           <div class="sheet-row">
             <label for="paint-address">Alamat Singkat</label>
-            <input
+            <MaterialSuggestion
               id="paint-address"
-              v-model.trim="form.alamat"
-              list="address-suggestions"
+              v-model="form.alamat"
+              label="Alamat Singkat"
+              :options="addressSuggestions"
               required
             />
-            <datalist id="address-suggestions">
-              <option v-for="item in addressSuggestions" :key="item" :value="item"></option>
-            </datalist>
           </div>
         </div>
 
@@ -480,6 +474,7 @@ import { API_URL } from '../config/api'
 import { useRouter } from 'vue-router'
 import { comparisonPricePerKg, comparisonWeightKg } from '../utils/materialPricing'
 import { formatMaterialColor, parseMaterialColor } from '../utils/materialColor'
+import MaterialSuggestion from '../components/MaterialSuggestion.vue'
 
 const ITEMS_PER_PAGE = 8
 const router = useRouter()
@@ -1125,20 +1120,21 @@ function logout() {
   margin: auto;
   padding: 24px;
   overflow: auto;
-  border: 1px solid #c9c9c9;
+  border: 1px solid var(--tm-border);
   border-radius: 0;
-  color: #000;
-  background: #eee;
+  color: var(--tm-ink);
+  background: #fff;
   font-family: Arial, sans-serif;
   font-size: 13px;
 }
 
 .sheet-dialog::backdrop {
-  background: rgb(0 0 0 / 35%);
+  background: rgb(48 35 38 / 40%);
 }
 
 .sheet-title {
   margin: 0 0 34px;
+  color: var(--tm-primary-dark);
   font-size: 16px;
   font-weight: 400;
   line-height: 20px;
@@ -1148,12 +1144,6 @@ function logout() {
   display: grid;
   grid-template-columns: minmax(0, 489fr) minmax(0, 294fr);
   gap: 20px;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0 40px,
-    #d7d7d7 40px 41px,
-    transparent 41px 50px
-  );
 }
 
 .sheet-fields {
@@ -1184,22 +1174,34 @@ function logout() {
   height: 41px;
   margin: 0;
   padding: 4px;
-  border: 1px solid #000;
+  border: 1px solid var(--tm-border);
   border-radius: 0;
-  color: #000;
+  color: var(--tm-ink);
   background: #fff;
   font: inherit;
 }
 
 .sheet-row output {
   line-height: 31px;
+  color: var(--tm-primary-dark);
+  background: var(--tm-primary-soft);
+}
+
+.sheet-row input[readonly] {
+  color: var(--tm-muted);
+  background: #fdfafa;
+}
+
+.sheet-form button:focus-visible {
+  outline: 2px solid var(--tm-primary);
+  outline-offset: 2px;
 }
 
 .sheet-row input:focus,
-.sheet-row select:focus,
-.sheet-form button:focus-visible {
-  outline: 2px solid #d00000;
-  outline-offset: 2px;
+.sheet-row select:focus {
+  outline: none;
+  border-color: var(--tm-primary);
+  box-shadow: 0 0 0 0.2rem rgb(208 0 0 / 13%);
 }
 
 .sheet-number {
@@ -1246,8 +1248,8 @@ function logout() {
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid #000;
-  background: #fff;
+  border: 1px solid var(--tm-border);
+  background: #fdfafa;
 }
 
 .sheet-photo img {
@@ -1274,8 +1276,9 @@ function logout() {
   padding: 6px 8px;
   border: 0;
   border-radius: 0;
-  color: #f00;
-  background: transparent;
+  color: var(--tm-primary-dark);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--tm-border);
   font: inherit;
 }
 
@@ -1284,7 +1287,8 @@ function logout() {
 }
 
 .sheet-form button:hover {
-  background: #e0e0e0;
+  background: var(--tm-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--tm-primary);
 }
 
 .sheet-actions {
@@ -1294,12 +1298,14 @@ function logout() {
 
 .sheet-form .sheet-save {
   color: #fff;
-  background: #d00000;
+  background: var(--tm-primary);
+  box-shadow: none;
   font-weight: 700;
 }
 
 .sheet-form .sheet-save:hover {
-  background: #b00000;
+  background: var(--tm-primary-dark);
+  box-shadow: none;
 }
 
 .sheet-form .sheet-save:disabled {
@@ -1309,7 +1315,7 @@ function logout() {
 .sheet-error {
   grid-column: 1 / -1;
   margin: 0;
-  color: #a00000;
+  color: var(--tm-primary-dark);
 }
 
 :global(body:has(.sheet-dialog[open])) {
