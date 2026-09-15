@@ -17,6 +17,7 @@ const fields = {
   toko: "toko",
   alamat: "alamat",
   hargaKemasan: "harga_kemasan",
+  satuanHarga: "satuan_harga",
   foto: "foto",
 };
 const keys = Object.keys(fields);
@@ -35,6 +36,7 @@ const numberFields = [
 ];
 
 function normalize(row) {
+  row.satuanHarga = row.satuanHarga || row.kemasan;
   for (const key of numberFields)
     if (row[key] != null) row[key] = Number(row[key]);
   return row;

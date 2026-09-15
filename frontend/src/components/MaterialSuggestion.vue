@@ -23,6 +23,7 @@ const props = defineProps({
   label: { type: String, required: true },
   modelValue: { type: String, default: '' },
   options: { type: Array, default: () => [] },
+  allowNew: { type: Boolean, default: true },
   required: Boolean,
 })
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -54,7 +55,7 @@ onMounted(() => {
   widget.select2({
     width: '100%',
     dropdownParent: $(dialog),
-    tags: true,
+    tags: props.allowNew,
     allowClear: true,
     placeholder: 'Pilih atau ketik...',
     language: {

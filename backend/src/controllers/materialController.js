@@ -32,6 +32,14 @@ function validateMaterial(body) {
   if (!["L", "kg"].includes(body.isiSatuan))
     throw new Error("Satuan isi harus L atau kg.");
   material.isiSatuan = body.isiSatuan;
+  material.satuanHarga = body.satuanHarga ?? material.kemasan;
+  if (!["Kg", "L", "Galon", "Pail"].includes(material.satuanHarga))
+    throw new Error("Satuan harga harus Kg, L, Galon, atau Pail.");
+  if (material.satuanHarga === "L" && material.isiSatuan !== "L")
+    throw new Error("Harga per L memerlukan Volume Isi dalam L agar dapat dihitung ke kg.");
+  if (["Galon", "Pail"].includes(material.satuanHarga) &&
+      material.satuanHarga.toLowerCase() !== material.kemasan.toLowerCase())
+    throw new Error("Untuk harga per Galon atau Pail, pilih satuan yang sesuai kemasan.");
   for (const field of [
     "isiNilai",
     "beratTotalKg",

@@ -12,6 +12,15 @@ export function comparisonWeightKg(material) {
 export function comparisonPricePerKg(material) {
   const weight = comparisonWeightKg(material)
   const price = Number(material.hargaKemasan) || 0
+  const unit = material.satuanHarga
+
+  if (unit === 'Kg') return price
+  if (unit === 'L') {
+    return material.isiSatuan === 'L' && weight > 0
+      ? (price * Number(material.isiNilai)) / weight
+      : 0
+  }
+  if (unit && unit.toLowerCase() !== material.kemasan?.toLowerCase()) return 0
 
   return weight > 0 ? price / weight : 0
 }

@@ -17,7 +17,6 @@
       </nav>
 
       <p class="material-sidebar__note">
-        Bandingkan harga cat dengan satu ukuran yang sama: rupiah per kilogram.
       </p>
     </aside>
 
@@ -151,7 +150,7 @@
                   <th scope="colgroup" colspan="6">ISI</th>
                   <th scope="col" rowspan="2">TOKO</th>
                   <th scope="col" rowspan="2">ALAMAT SINGKAT</th>
-                  <th scope="colgroup" rowspan="2" colspan="2">HARGA / KEMASAN (BENTUK)</th>
+                  <th scope="colgroup" rowspan="2" colspan="2">HARGA / SATUAN</th>
                   <th scope="colgroup" rowspan="2" colspan="2">
                     HARGA KOMPARASI / SATUAN MATERIAL
                   </th>
@@ -215,7 +214,7 @@
                   <td>{{ material.toko }}</td>
                   <td class="material-table__address">{{ material.alamat }}</td>
                   <td class="text-end">{{ formatCurrency(material.hargaKemasan) }}</td>
-                  <td>/ {{ material.kemasan }}</td>
+                  <td>/ {{ material.satuanHarga || material.kemasan }}</td>
                   <td class="text-end">{{ formatCurrency(pricePerKg(material)) }}</td>
                   <td>/ Kg</td>
                 </tr>
@@ -386,7 +385,14 @@
                 />
                 <span class="sheet-slash">/</span>
               </div>
-              <input :value="form.kemasan" aria-label="Satuan harga" readonly />
+              <MaterialSuggestion
+                id="paint-price-unit"
+                v-model="form.satuanHarga"
+                label="Satuan harga"
+                :options="['Kg', 'L', 'Galon', 'Pail']"
+                :allow-new="false"
+                required
+              />
             </div>
           </div>
 
@@ -507,6 +513,7 @@ const emptyForm = () => ({
   beratTotalKg: '',
   beratKemasanKg: 0.2,
   hargaKemasan: '',
+  satuanHarga: 'Galon',
   toko: '',
   alamat: '',
   foto: '',
@@ -592,7 +599,7 @@ const formWeightKg = computed(() =>
   form.isiSatuan === 'L' && form.beratKemasanKg === '' ? 0 : comparisonWeightKg(form),
 )
 const formComparisonPrice = computed(() =>
-  formWeightKg.value > 0 ? comparisonPricePerKg(form) : 0,
+  form.satuanHarga === 'Kg' || formWeightKg.value > 0 ? comparisonPricePerKg(form) : 0,
 )
 
 watch(
@@ -604,6 +611,9 @@ watch(totalPages, (pages) => {
 })
 function updatePackagingWeight() {
   form.beratKemasanKg = knownPackaging.value ?? ''
+  if (['Galon', 'Pail'].includes(form.satuanHarga) && ['Galon', 'Pail'].includes(form.kemasan)) {
+    form.satuanHarga = form.kemasan
+  }
 }
 
 function updateStoreAddress() {
@@ -667,6 +677,7 @@ function openEditPanel(material) {
   editingId.value = material.id
   removePhoto()
   Object.assign(form, emptyForm(), material)
+  form.satuanHarga = material.satuanHarga || material.kemasan
   colorInput.value = formatMaterialColor(material)
   formError.value = ''
   materialDialog.value.showModal()
@@ -693,6 +704,17 @@ function closeOnBackdrop(event) {
 async function saveMaterial() {
   formError.value = ''
   if (photoLoading.value || saving.value) return
+  if (form.satuanHarga === 'L' && form.isiSatuan !== 'L') {
+    formError.value = 'Harga per L memerlukan Volume Isi dalam L agar dapat dihitung ke kg.'
+    return
+  }
+  if (
+    ['Galon', 'Pail'].includes(form.satuanHarga) &&
+    form.satuanHarga.toLowerCase() !== form.kemasan.toLowerCase()
+  ) {
+    formError.value = 'Untuk harga per Galon atau Pail, pilih satuan yang sesuai kemasan.'
+    return
+  }
   if (form.isiSatuan === 'L' && formWeightKg.value <= 0) {
     formError.value = 'Berat total harus lebih besar daripada berat kemasan kosong.'
     return
