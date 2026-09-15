@@ -54,11 +54,11 @@
         <div class="material-stats" aria-label="Ringkasan data material cat">
           <article>
             <span>Total data</span><strong>{{ materials.length }}</strong
-            ><small>varian harga cat</small>
+            ><small>varian harga</small>
           </article>
           <article>
             <span>Toko tercatat</span><strong>{{ storeOptions.length }}</strong
-            ><small>lokasi pembelian</small>
+            ><small>Lokasi pembelian</small>
           </article>
           <article class="material-stats__price">
             <span>Harga terendah</span>
